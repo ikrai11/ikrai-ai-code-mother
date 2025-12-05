@@ -1,10 +1,19 @@
 package com.aistd.ikraiaicodemother.service;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import com.aistd.ikraiaicodemother.model.dto.user.UserQueryRequest;
 import com.aistd.ikraiaicodemother.model.vo.LoginUserVO;
+import com.aistd.ikraiaicodemother.model.vo.UserVO;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户 服务层。
@@ -47,6 +56,23 @@ public interface UserService extends IService<User> {
      */
     User getLoginUser(HttpServletRequest request);
 
+
+    /**
+     * 获取用户视图（脱敏）
+     *
+     * @param user 用户实体
+     * @return 脱敏后的用户视图
+     */
+    UserVO getUserVO(User user);
+
+    /**
+     * 获取用户视图（脱敏）列表
+     *
+     * @param userList 用户实体列表
+     * @return 脱敏后的用户视图列表
+     */
+    List<UserVO> getUserVOList(List<User> userList);
+
     /**
      * 用户注销
      *
@@ -55,7 +81,13 @@ public interface UserService extends IService<User> {
      */
     boolean userLogout(HttpServletRequest request);
 
-
+    /**
+     * 获取查询条件
+     *
+     * @param userQueryRequest 用户查询请求
+     * @return 查询条件
+     */
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 
     /**
      * 获取加密密码
