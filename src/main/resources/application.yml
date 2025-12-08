@@ -10,6 +10,9 @@ server:
   port: 8123
   servlet:
     context-path: /api
+  session:
+    cookie:
+      path: /api
 # springdoc-openapi
 springdoc:
   group-configs:
