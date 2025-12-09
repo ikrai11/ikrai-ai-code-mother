@@ -30,6 +30,10 @@
               </a-space>
               <template #overlay>
                 <a-menu>
+                  <a-menu-item @click="goToProfile">
+                    <UserOutlined />
+                    个人中心
+                  </a-menu-item>
                   <a-menu-item @click="doLogout">
                     <LogoutOutlined />
                     退出登录
@@ -53,7 +57,7 @@ import { useRouter } from 'vue-router'
 import { type MenuProps, message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 const loginUserStore = useLoginUserStore()
-import { LogoutOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { userLogout } from '@/api/userController.ts'
 import checkAccess from '@/access/checkAccess'
 import ACCESS_ENUM from '@/access/accessEnum'
@@ -100,20 +104,20 @@ const menuToRouteItem = (menu: any) => {
     ...menu,
     // 如果没有meta属性，添加默认值
     meta: menu.meta || {}
-  };
-};
+  }
+}
 
 // 过滤菜单项并使其响应式
 const menuItems = computed<MenuProps['items']>(() => {
   return originItems.filter((menu) => {
     // 将菜单转换为路由项
-    const item = menuToRouteItem(menu);
+    const item = menuToRouteItem(menu)
     if (item.meta?.hideInMenu) {
-      return false;
+      return false
     }
     // 根据权限过滤菜单，有权限则返回 true，则保留该菜单
-    return checkAccess(loginUserStore.loginUser, item.meta?.access as string);
-  });
+    return checkAccess(loginUserStore.loginUser, item.meta?.access as string)
+  })
 })
 
 // 处理菜单点击
@@ -124,6 +128,11 @@ const handleMenuClick: MenuProps['onClick'] = (e) => {
   if (key.startsWith('/')) {
     router.push(key)
   }
+}
+
+// 跳转到个人中心
+const goToProfile = () => {
+  router.push('/user/profile')
 }
 
 // 用户注销

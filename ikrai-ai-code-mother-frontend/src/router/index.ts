@@ -4,6 +4,7 @@ import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
 import UserManagePage from '@/pages/admin/UserManagePage.vue'
 import ACCESS_ENUM from '@/access/accessEnum.ts'
+import UserProfilePage from '@/pages/user/userProfilePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +23,14 @@ const router = createRouter({
       path: '/user/register',
       name: '用户注册',
       component: UserRegisterPage,
+    },
+    {
+      path: '/user/profile', // 新增个人中心路由
+      name: '个人中心',
+      component: UserProfilePage,
+      meta: {
+        access: ACCESS_ENUM.USER // 需要登录才能访问
+      }
     },
     {
       path: '/admin/userManage',
