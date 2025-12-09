@@ -26,23 +26,46 @@
       </template>
     </template>
 
-    <template #bodyCell="{ column, record }">
-      <template v-if="column.dataIndex === 'userAvatar'">
-        <a-image :src="record.userAvatar" :width="120" />
+    <template #bodyCell="{ column, text, record }">
+      <template v-if="['userName', 'userProfile', 'userRole'].includes(column.dataIndex)">
+        <div>
+          <a-input
+            v-if="editableData[record.id]"
+            v-model:value="editableData[record.id][column.dataIndex]"
+            style="margin: -5px 0"
+          />
+          <template v-else-if="column.dataIndex === 'userRole'">
+            <div v-if="text === 'admin'">
+              <a-tag color="green">管理员</a-tag>
+            </div>
+            <div v-else>
+              <a-tag color="blue">普通用户</a-tag>
+            </div>
+          </template>
+          <template v-else>
+            {{ text }}
+          </template>
+        </div>
       </template>
-      <template v-else-if="column.dataIndex === 'userRole'">
-        <div v-if="record.userRole === 'admin'">
-          <a-tag color="green">管理员</a-tag>
-        </div>
-        <div v-else>
-          <a-tag color="blue">普通用户</a-tag>
-        </div>
+      <template v-else-if="column.dataIndex === 'userAvatar'">
+        <a-image :src="record.userAvatar" :width="120" />
       </template>
       <template v-else-if="column.dataIndex === 'createTime'">
         {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
       </template>
       <template v-else-if="column.key === 'action'">
-        <a-button danger @click="doDelete(record.id)">删除</a-button>
+        <div class="editable-row-operations">
+          <span v-if="editableData[record.id]">
+            <a-button type="primary" @click="save(record.id)" style="margin-right: 8px">保存</a-button>
+            <a-popconfirm title="确定要取消吗？" @confirm="cancel(record.id)">
+              <a-button>取消</a-button>
+            </a-popconfirm>
+          </span>
+          <span v-else>
+            <a-button @click="edit(record.id)" style="margin-right: 8px">编辑</a-button>
+            <a-button danger @click="doDelete(record.id)">删除</a-button>
+          </span>
+        </div>
       </template>
     </template>
   </a-table>
@@ -50,9 +73,11 @@
 <script lang="ts" setup>
 import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { deleteUser, listUserVoByPage } from '@/api/userController.ts'
+import { deleteUser, listUserVoByPage, updateUser } from '@/api/userController.ts'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { cloneDeep } from 'lodash-es'
+
 const columns = [
   {
     title: 'id',
@@ -92,6 +117,9 @@ const columns = [
 const data = ref<API.UserVO[]>([])
 const total = ref(0)
 
+// 正在编辑的数据
+const editableData = reactive<Record<string, API.UserVO>>({})
+
 // 搜索条件
 const searchParams = reactive<API.UserQueryRequest>({
   pageNum: 1,
@@ -121,6 +149,7 @@ const pagination = computed(() => {
     showTotal: (total: number) => `共 ${total} 条`,
   }
 })
+
 // 表格变化处理
 const doTableChange = (page: any) => {
   searchParams.pageNum = page.current
@@ -150,6 +179,51 @@ const doDelete = async (id: string) => {
   }
 }
 
+// 编辑用户
+const edit = (id: string) => {
+  const user = data.value.find(item => item.id === id)
+  if (user) {
+    editableData[id] = cloneDeep(user)
+  }
+}
+
+// 保存用户
+const save = async (id: string) => {
+  try {
+    const userToUpdate = editableData[id]
+    if (!userToUpdate) return
+
+    // 准备更新请求数据
+    const updateRequest: API.UserUpdateRequest = {
+      id: userToUpdate.id,
+      userName: userToUpdate.userName,
+      userProfile: userToUpdate.userProfile,
+      userRole: userToUpdate.userRole,
+    }
+
+    // 调用更新API
+    const response = await updateUser(updateRequest)
+    if (response.data.code === 0) {
+      // 更新成功，同步到数据源
+      const userIndex = data.value.findIndex(item => item.id === id)
+      if (userIndex !== -1) {
+        Object.assign(data.value[userIndex], userToUpdate)
+      }
+      message.success('更新成功')
+      delete editableData[id]
+    } else {
+      message.error(response.data.message || '更新失败')
+    }
+  } catch (error) {
+    message.error('更新失败')
+  }
+}
+
+// 取消编辑
+const cancel = (id: string) => {
+  delete editableData[id]
+}
+
 // 页面加载时请求一次
 onMounted(() => {
   fetchData()
@@ -158,5 +232,10 @@ onMounted(() => {
 <style scoped>
 #userManagePage {
   width: 1200px;
+}
+
+.editable-row-operations {
+  display: flex;
+  align-items: center;
 }
 </style>
