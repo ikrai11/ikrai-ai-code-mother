@@ -1,7 +1,5 @@
 package com.aistd.ikraiaicodemother.core.parser;
 
-import com.aistd.ikraiaicodemother.core.parser.HtmlCodeParser;
-import com.aistd.ikraiaicodemother.core.parser.MultiFileCodeParser;
 import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
@@ -10,7 +8,6 @@ import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
  * 代码解析执行器
  * 根据代码生成类型执行相应的解析逻辑
  *
- * @author yupi
  */
 public class CodeParserExecutor {
 
