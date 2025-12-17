@@ -1,10 +1,12 @@
 package com.aistd.ikraiaicodemother.service;
 
 import com.aistd.ikraiaicodemother.model.dto.app.AppQueryRequest;
+import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodemother.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.aistd.ikraiaicodemother.model.entity.App;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -24,6 +26,25 @@ public interface AppService extends IService<App> {
     AppVO getAppVO(App app);
 
     /**
+     * 聊天生成代码
+     *
+     * @param appId     应用ID
+     * @param message   聊天消息
+     * @param loginUser 登录用户
+     * @return 代码生成结果流
+     */
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 部署应用
+     *
+     * @param appId     应用ID
+     * @param loginUser 登录用户
+     * @return 部署结果
+     */
+    String deployApp( Long appId, User loginUser);
+
+    /**
      * 获取应用封装类列表
      *
      * @param appList
@@ -34,11 +55,8 @@ public interface AppService extends IService<App> {
     /**
      * 获取查询包装器
      *
-     * @param appQueryRequest
-     * @return
+     * @param appQueryRequest 查询参数
+     * @return 查询包装器
      */
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
-
-
-
 }
