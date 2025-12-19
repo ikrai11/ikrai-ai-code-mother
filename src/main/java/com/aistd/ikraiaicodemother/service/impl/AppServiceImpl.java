@@ -3,7 +3,6 @@ package com.aistd.ikraiaicodemother.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.aistd.ikraiaicodemother.constant.AppConstant;
@@ -13,9 +12,11 @@ import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
 import com.aistd.ikraiaicodemother.model.dto.app.AppQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.User;
+import com.aistd.ikraiaicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
 import com.aistd.ikraiaicodemother.model.vo.AppVO;
 import com.aistd.ikraiaicodemother.model.vo.UserVO;
+import com.aistd.ikraiaicodemother.service.ChatHistoryService;
 import com.aistd.ikraiaicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -23,10 +24,12 @@ import com.aistd.ikraiaicodemother.model.entity.App;
 import com.aistd.ikraiaicodemother.mapper.AppMapper;
 import com.aistd.ikraiaicodemother.service.AppService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +41,12 @@ import java.util.stream.Collectors;
  * 应用 服务层实现。
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
     @Resource
     private UserService userService;
-
-
+    @Resource
+    private ChatHistoryService chatHistoryService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
@@ -60,11 +64,57 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "您没有权限访问此应用");
         }
         //4.获取应用的代码生成的类型
-        String codeGenType = app.getCodeGenType();
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        String codeGenTypeStr = app.getCodeGenType();
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "应用代码生成类型不存在");
-        //5.调用AI生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum,appId);
+        //5.通过校验后，添加用户消息到对话历史
+        chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        //6.调用AI生成代码（流式）
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        //7.收集AI相应内容并在完成后添加到对话历史
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux.map(chunk->{
+            //8.收集AI响应内容
+            aiResponseBuilder.append(chunk);
+            return chunk;
+        }).doOnComplete(()->{
+            //在流式响应完成时添加AI响应到对话历史
+            String aiResponse = aiResponseBuilder.toString();
+            if (StrUtil.isNotBlank(aiResponse)){
+                chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(),
+                        loginUser.getId());
+            }
+        }).doOnError(error -> {
+            //如果AI响应出错，也将错误信息添加到对话历史
+            String errorMessage ="AI响应出错："+ error.getMessage();
+            chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(),
+                        loginUser.getId());
+        });
+    }
+        /**
+         * 删除应用时关联删除对话历史
+         * @param id 应用ID
+         * @return 是否删除成功
+         */
+    @Override
+    public boolean removeByAppId(Serializable id) {
+        if (id==null){
+            return false;
+        }
+        //装换为Long类型
+        Long appId = Long.valueOf(id.toString());
+        if (appId<=0){
+            return false;
+        }
+        try {
+            //先删除关联的对话历史
+            chatHistoryService.deleteByAppId(appId);
+        } catch (Exception e) {
+            //删除对话历史失败时，记录日志
+            log.error("删除应用关联对话历史失败: {}", e.getMessage());
+        }
+        //再删除应用
+        return this.removeById(appId);
     }
 
     @Override
