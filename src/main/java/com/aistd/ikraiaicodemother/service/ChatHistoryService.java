@@ -1,5 +1,6 @@
 package com.aistd.ikraiaicodemother.service;
 
+import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryExportRequest;
 import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import com.mybatisflex.core.paginate.Page;
@@ -59,4 +60,12 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return
      */
     QueryWrapper getQueryWrapper(ChatHistoryQueryRequest chatHistoryQueryRequest);
+
+    /**
+     * 导出对话历史为Markdown格式
+     * @param exportRequest 导出请求
+     * @param loginUser 登录用户
+     * @return Markdown格式的对话历史内容
+     */
+    String exportChatHistoryAsMarkdown(ChatHistoryExportRequest exportRequest, User loginUser);
 }

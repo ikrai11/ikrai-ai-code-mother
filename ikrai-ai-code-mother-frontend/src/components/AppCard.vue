@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+
 interface Props {
   app: API.AppVO
   featured?: boolean

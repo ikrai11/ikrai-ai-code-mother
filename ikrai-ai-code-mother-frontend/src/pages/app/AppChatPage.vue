@@ -12,6 +12,12 @@
           </template>
           应用详情
         </a-button>
+        <a-button type="default" @click="downloadChatHistory">
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载对话
+        </a-button>
         <a-button type="primary" @click="deployApp" :loading="deploying">
           <template #icon>
             <CloudUploadOutlined />
@@ -158,7 +164,7 @@ import {
   deployApp as deployAppApi,
   deleteApp as deleteAppApi,
 } from '@/api/appController'
-import { listAppChatHistory } from '@/api/chatHistoryController'
+import { listAppChatHistory, exportChatHistoryAsMarkdown } from '@/api/chatHistoryController'
 import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
 import request from '@/request'
 
@@ -173,6 +179,7 @@ import {
   SendOutlined,
   ExportOutlined,
   InfoCircleOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -225,6 +232,36 @@ const appDetailVisible = ref(false)
 // 显示应用详情
 const showAppDetail = () => {
   appDetailVisible.value = true
+}
+
+// 下载对话历史
+const downloadChatHistory = async () => {
+  if (!appId.value) {
+    message.error('应用ID不存在')
+    return
+  }
+
+  try {
+    const res = await exportChatHistoryAsMarkdown({
+      appId: appId.value as unknown as number
+    })
+
+    // 创建下载链接
+    const blob = new Blob([res.data], { type: 'text/markdown;charset=utf-8' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `chat_history_${appId.value}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    message.success('对话历史下载成功')
+  } catch (error) {
+    console.error('下载对话历史失败：', error)
+    message.error('下载对话历史失败')
+  }
 }
 
 // 获取应用信息

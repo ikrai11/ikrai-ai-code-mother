@@ -133,6 +133,12 @@ declare namespace API {
     lastCreateTime?: string
   }
 
+  type ChatHistoryExportRequest = {
+    appId?: number
+    startTime?: string
+    endTime?: string
+  }
+
   type chatToGenCodeParams = {
     appId: number
     message: string

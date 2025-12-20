@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.aistd.ikraiaicodemother.constant.UserConstant;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
+import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryExportRequest;
 import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.App;
 import com.aistd.ikraiaicodemother.model.entity.User;
@@ -25,7 +26,9 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Collections;
 
@@ -179,6 +182,114 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             queryWrapper.orderBy("createTime", false);
         }
         return queryWrapper;
+    }
+
+    /**
+     * 导出对话历史为Markdown格式
+     * @param exportRequest 导出请求
+     * @param loginUser 登录用户
+     * @return Markdown格式的对话历史内容
+     */
+    @Override
+    public String exportChatHistoryAsMarkdown(ChatHistoryExportRequest exportRequest, User loginUser) {
+        ThrowUtils.throwIf(exportRequest == null, ErrorCode.PARAMS_ERROR, "导出请求不能为空");
+        Long appId = exportRequest.getAppId();
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+
+        // 验证权限：只有应用创建者和管理员可以导出
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        boolean isCreator = app.getUserId().equals(loginUser.getId());
+        ThrowUtils.throwIf(!isAdmin && !isCreator, ErrorCode.NO_AUTH_ERROR, "无权导出该应用的对话历史");
+
+        // 查询对话历史
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq(ChatHistory::getAppId, appId)
+                .orderBy(ChatHistory::getCreateTime, true); // 按时间正序排列
+
+        // 添加时间范围过滤
+        if (exportRequest.getStartTime() != null) {
+            queryWrapper.ge(ChatHistory::getCreateTime, exportRequest.getStartTime());
+        }
+        if (exportRequest.getEndTime() != null) {
+            queryWrapper.le(ChatHistory::getCreateTime, exportRequest.getEndTime());
+        }
+
+        List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+        if (CollUtil.isEmpty(chatHistoryList)) {
+            return generateEmptyMarkdown(app);
+        }
+
+        // 按时间排序
+        chatHistoryList.sort(Comparator.comparing(ChatHistory::getCreateTime));
+
+        return generateMarkdownContent(app, chatHistoryList);
+    }
+
+    /**
+     * 生成空的Markdown内容
+     */
+    private String generateEmptyMarkdown(App app) {
+        StringBuilder markdown = new StringBuilder();
+        markdown.append("# ").append(app.getAppName()).append(" - 对话历史\n\n");
+        markdown.append("**应用ID：** ").append(app.getId()).append("\n");
+        markdown.append("**导出时间：** ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        markdown.append("---\n\n");
+        markdown.append("暂无对话记录\n");
+        return markdown.toString();
+    }
+
+    /**
+     * 生成Markdown格式的对话历史内容
+     */
+    private String generateMarkdownContent(App app, List<ChatHistory> chatHistoryList) {
+        StringBuilder markdown = new StringBuilder();
+
+        // 标题和基本信息
+        markdown.append("# ").append(app.getAppName()).append(" - 对话历史\n\n");
+        markdown.append("**应用ID：** ").append(app.getId()).append("\n");
+        markdown.append("**应用描述：** ").append(StrUtil.isNotBlank(app.getInitPrompt()) ? app.getInitPrompt() : "无").append("\n");
+        markdown.append("**导出时间：** ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        markdown.append("**对话总数：** ").append(chatHistoryList.size()).append(" 条\n");
+        markdown.append("**时间范围：** ").append(chatHistoryList.get(0).getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .append(" 至 ").append(chatHistoryList.get(chatHistoryList.size() - 1).getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+
+        markdown.append("---\n\n");
+
+        // 对话记录
+        markdown.append("## 对话记录\n\n");
+
+        for (ChatHistory chat : chatHistoryList) {
+            String role = ChatHistoryMessageTypeEnum.USER.getValue().equals(chat.getMessageType()) ? "用户" : "AI助手";
+            String timeStr = chat.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            markdown.append("### ").append(role).append(" - ").append(timeStr).append("\n\n");
+            markdown.append(formatMessage(chat.getMessage())).append("\n\n");
+            markdown.append("---\n\n");
+        }
+
+        return markdown.toString();
+    }
+
+    /**
+     * 格式化消息内容，支持代码块等格式
+     */
+    private String formatMessage(String message) {
+        if (StrUtil.isBlank(message)) {
+            return "*空消息*";
+        }
+
+        // 简单处理代码块（如果消息包含```）
+        if (message.contains("```")) {
+            return message;
+        }
+
+        // 处理换行
+        message = message.replace("\n", "\n\n");
+
+        return message;
     }
 
 

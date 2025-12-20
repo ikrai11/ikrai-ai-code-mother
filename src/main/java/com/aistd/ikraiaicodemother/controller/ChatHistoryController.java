@@ -6,6 +6,7 @@ import com.aistd.ikraiaicodemother.common.ResultUtils;
 import com.aistd.ikraiaicodemother.constant.UserConstant;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
+import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryExportRequest;
 import com.aistd.ikraiaicodemother.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodemother.service.UserService;
@@ -13,12 +14,16 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.aistd.ikraiaicodemother.model.entity.ChatHistory;
 import com.aistd.ikraiaicodemother.service.ChatHistoryService;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -70,6 +75,36 @@ public class ChatHistoryController {
         QueryWrapper queryWrapper = chatHistoryService.getQueryWrapper(chatHistoryQueryRequest);
         Page<ChatHistory> result = chatHistoryService.page(Page.of(pageNum, pageSize), queryWrapper);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 导出对话历史为Markdown文件
+     *
+     * @param exportRequest 导出请求
+     * @param request       请求
+     * @param response      响应
+     */
+    @PostMapping("/export/markdown")
+    public void exportChatHistoryAsMarkdown(@RequestBody ChatHistoryExportRequest exportRequest,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response) throws IOException {
+        ThrowUtils.throwIf(exportRequest == null, ErrorCode.PARAMS_ERROR, "导出请求不能为空");
+
+        User loginUser = userService.getLoginUser(request);
+        String markdownContent = chatHistoryService.exportChatHistoryAsMarkdown(exportRequest, loginUser);
+
+        // 设置响应头
+        String fileName = "chat_history_" + exportRequest.getAppId() + "_" +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".md";
+
+        response.setContentType("text/markdown; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" +
+                java.net.URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        response.setCharacterEncoding("UTF-8");
+
+        // 写入响应
+        response.getWriter().write(markdownContent);
+        response.getWriter().flush();
     }
 
 
