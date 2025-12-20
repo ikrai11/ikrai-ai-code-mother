@@ -27,6 +27,16 @@
       <div class="chat-section">
         <!-- 消息区域 -->
         <div class="messages-container" ref="messagesContainer">
+          <!-- 加载更多按钮 -->
+          <div v-if="hasMoreHistory && !chatHistoryLoading" class="load-more-container">
+            <a-button
+              type="link"
+              @click="loadMoreHistory"
+              :loading="chatHistoryLoading"
+            >
+              加载更多历史消息
+            </a-button>
+          </div>
           <div v-for="(message, index) in messages" :key="index" class="message-item">
             <div v-if="message.type === 'user'" class="user-message">
               <div class="message-content">{{ message.content }}</div>
@@ -148,6 +158,7 @@ import {
   deployApp as deployAppApi,
   deleteApp as deleteAppApi,
 } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
 import request from '@/request'
 
@@ -184,6 +195,11 @@ const userInput = ref('')
 const isGenerating = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const hasInitialConversation = ref(false) // 标记是否已经进行过初始对话
+
+// 对话历史相关
+const chatHistoryLoading = ref(false)
+const hasMoreHistory = ref(true)
+const lastCreateTime = ref<string | undefined>() // 用于游标分页
 
 // 预览相关
 const previewUrl = ref('')
@@ -227,12 +243,11 @@ const fetchAppInfo = async () => {
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
 
-      // 检查是否有view=1参数，如果有则不自动发送初始提示词
-      const isViewMode = route.query.view === '1'
+      // 加载对话历史
+      await loadChatHistory()
 
-      // 自动发送初始提示词（除非是查看模式或已经进行过初始对话）
-      if (appInfo.value.initPrompt && !isViewMode && !hasInitialConversation.value) {
-        hasInitialConversation.value = true
+      // 如果是自己的 app 且没有对话历史，才自动发送初始消息
+      if (isOwner.value && appInfo.value.initPrompt && !hasInitialConversation.value) {
         await sendInitialMessage(appInfo.value.initPrompt)
       }
     } else {
@@ -244,6 +259,67 @@ const fetchAppInfo = async () => {
     message.error('获取应用信息失败')
     router.push('/')
   }
+}
+
+// 加载对话历史
+const loadChatHistory = async (loadMore = false) => {
+  if (!appId.value || chatHistoryLoading.value) return
+
+  chatHistoryLoading.value = true
+  try {
+    const res = await listAppChatHistory({
+      appId: appId.value as unknown as number,
+      lastCreateTime: loadMore ? lastCreateTime.value : undefined,
+    })
+
+    if (res.data.code === 0 && res.data.data) {
+      const historyRecords = res.data.data.records || []
+
+      // 转换历史记录为消息格式
+      const historyMessages: Message[] = historyRecords.map((record: API.ChatHistory) => ({
+        type: record.messageType === 'user' ? 'user' : 'ai',
+        content: record.message || '',
+      })).reverse() // 反转以保持时间顺序
+
+      if (loadMore) {
+        // 加载更多时，将历史消息添加到前面
+        messages.value = [...historyMessages, ...messages.value]
+      } else {
+        // 首次加载时，直接设置消息
+        messages.value = historyMessages
+      }
+
+      // 更新游标和加载状态
+      if (historyRecords.length > 0) {
+        lastCreateTime.value = historyRecords[historyRecords.length - 1].createTime
+      }
+
+      // 检查是否还有更多历史消息
+      hasMoreHistory.value = res.data.data.totalRow ? res.data.data.totalRow > messages.value.length : false
+
+      // 检查是否有对话历史（用于初始消息逻辑）
+      hasInitialConversation.value = messages.value.length > 0
+
+      // 如果有至少2条对话记录，展示网站预览
+      if (messages.value.length >= 2) {
+        updatePreview()
+      }
+
+      // 如果有历史消息，延迟滚动到底部
+      await nextTick()
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('加载对话历史失败：', error)
+    message.error('加载对话历史失败')
+  } finally {
+    chatHistoryLoading.value = false
+  }
+}
+
+// 加载更多历史消息
+const loadMoreHistory = async () => {
+  await loadChatHistory(true)
 }
 
 // 发送初始消息
@@ -358,7 +434,10 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       // 延迟更新预览，确保后端已完成处理
       setTimeout(async () => {
         await fetchAppInfo()
-        updatePreview()
+        // 检查消息数量，如果有至少2条对话记录，展示网站预览
+        if (messages.value.length >= 2) {
+          updatePreview()
+        }
       }, 1000)
     })
 
@@ -555,6 +634,13 @@ onUnmounted(() => {
   padding: 16px;
   overflow-y: auto;
   scroll-behavior: smooth;
+}
+
+.load-more-container {
+  text-align: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
 }
 
 .message-item {
