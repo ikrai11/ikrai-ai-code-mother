@@ -1,6 +1,7 @@
 package com.aistd.ikraiaicodemother.core;
 
 import com.aistd.ikraiaicodemother.ai.AiCodeGeneratorService;
+import com.aistd.ikraiaicodemother.ai.AiCodeGeneratorServiceFactory;
 import com.aistd.ikraiaicodemother.ai.model.HtmlCodeResult;
 import com.aistd.ikraiaicodemother.ai.model.MultiFileCodeResult;
 import com.aistd.ikraiaicodemother.core.parser.CodeParserExecutor;
@@ -25,6 +26,8 @@ public class AiCodeGeneratorFacade {
     @Resource
     private AiCodeGeneratorService aiCodeGeneratorService;
 
+    @Resource
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
     /**
      * 统一入口：根据类型生成并保存代码（使用 appId）
      *
@@ -36,6 +39,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        //根据应用ID获取对应的AI服务实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
@@ -63,6 +68,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        //根据应用ID获取对应的AI服务实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
