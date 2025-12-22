@@ -2,7 +2,9 @@ package com.aistd.ikraiaicodemother.ai;
 
 import com.aistd.ikraiaicodemother.ai.model.HtmlCodeResult;
 import com.aistd.ikraiaicodemother.ai.model.MultiFileCodeResult;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
 public interface AiCodeGeneratorService {
@@ -41,4 +43,13 @@ public interface AiCodeGeneratorService {
      */
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     Flux<String> generateMultiFileCodeStream(String userMessage);
+
+    /**
+     * 生成Vue项目 （流式）
+     *
+     * @param userMessage 用户消息
+     * @return 生成的代码结果
+     */
+    @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
+    Flux<String> generateVueProjectCodeStream(@MemoryId long appId,@UserMessage String userMessage);
 }

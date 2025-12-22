@@ -195,7 +195,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         ThrowUtils.throwIf(exportRequest == null, ErrorCode.PARAMS_ERROR, "导出请求不能为空");
         Long appId = exportRequest.getAppId();
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
 
         // 验证权限：只有应用创建者和管理员可以导出
         App app = appService.getById(appId);
