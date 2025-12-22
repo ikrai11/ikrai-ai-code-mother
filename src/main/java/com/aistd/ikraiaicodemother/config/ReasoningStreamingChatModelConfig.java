@@ -26,10 +26,9 @@ public class ReasoningStreamingChatModelConfig {
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
                 .modelName(modelName)
+                .maxTokens(maxTokens)
                 .logRequests(true)
                 .logResponses(true)
-                .maxTokens(maxTokens)
-                .strictJsonSchema(true)
                 .build();
     }
 }

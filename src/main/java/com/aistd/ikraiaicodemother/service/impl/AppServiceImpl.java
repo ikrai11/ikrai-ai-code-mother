@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.aistd.ikraiaicodemother.constant.AppConstant;
 import com.aistd.ikraiaicodemother.core.AiCodeGeneratorFacade;
+import com.aistd.ikraiaicodemother.core.handler.StreamHandlerExecutor;
 import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
@@ -50,6 +51,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
+
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -70,26 +75,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         //5.通过校验后，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         //6.调用AI生成代码（流式）
-        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         //7.收集AI相应内容并在完成后添加到对话历史
-        StringBuilder aiResponseBuilder = new StringBuilder();
-        return contentFlux.map(chunk->{
-            //8.收集AI响应内容
-            aiResponseBuilder.append(chunk);
-            return chunk;
-        }).doOnComplete(()->{
-            //在流式响应完成时添加AI响应到对话历史
-            String aiResponse = aiResponseBuilder.toString();
-            if (StrUtil.isNotBlank(aiResponse)){
-                chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(),
-                        loginUser.getId());
-            }
-        }).doOnError(error -> {
-            //如果AI响应出错，也将错误信息添加到对话历史
-            String errorMessage ="AI响应出错："+ error.getMessage();
-            chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(),
-                        loginUser.getId());
-        });
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
     }
         /**
          * 删除应用时关联删除对话历史

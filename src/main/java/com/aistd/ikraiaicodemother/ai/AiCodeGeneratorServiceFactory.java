@@ -34,7 +34,6 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
 
-
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
 
