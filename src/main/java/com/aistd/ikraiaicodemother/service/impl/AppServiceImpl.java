@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.aistd.ikraiaicodemother.constant.AppConstant;
 import com.aistd.ikraiaicodemother.core.AiCodeGeneratorFacade;
+import com.aistd.ikraiaicodemother.core.builder.VueProjectBuilder;
 import com.aistd.ikraiaicodemother.core.handler.StreamHandlerExecutor;
 import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
@@ -50,9 +51,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private ChatHistoryService chatHistoryService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
-
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
 
 
@@ -132,21 +134,34 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (!sourceDir.exists()||!sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用代码不存在,请先生成代码");
         }
-        //7.复制文件到部署目录
+        //7.Vue项目特殊处理：执行构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            //Vue项目需要构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败：请检查项目依赖和代码");
+            //检查dist目录是否存在
+            File distDir = new File(sourceDirPath,"dist");
+            ThrowUtils.throwIf(!distDir.exists()||!distDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "Vue项目构建完成，但dist目录不存在");
+            //将dist目录作为部署目录
+            sourceDir = distDir;
+            log.info("Vue项目构建完成，部署目录为：{}",distDir.getAbsolutePath());
+        }
+        //8.复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR+ File.separator+deployKey;
         try {
             FileUtil.copyContent(sourceDir, new File(deployDirPath),true);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署应用失败,请联系管理员"+e.getMessage());
         }
-        //8.更新应用的deployKey和部署时间
+        //9.更新应用的deployKey和部署时间
         App updateApp=new App();
         updateApp.setId(appId);
         updateApp.setDeployKey(deployKey);
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean upadateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!upadateResult, ErrorCode.SYSTEM_ERROR, "更新应用部署失败");
-        //9.返回可访问的URL
+        //10.返回可访问的URL
         return String.format("%s/%s/",AppConstant.CODE_DEPLOY_HOST,deployKey);
     }
 

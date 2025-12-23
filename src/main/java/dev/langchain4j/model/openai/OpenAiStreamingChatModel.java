@@ -290,10 +290,10 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
             return this;
         }
 
-        public OpenAiStreamingChatModelBuilder modelName(OpenAiChatModelName modelName) {
-            this.modelName = modelName.toString();
-            return this;
-        }
+//        public OpenAiStreamingChatModelBuilder modelName(OpenAiChatModelName modelName) {
+//            this.modelName = modelName.toString();
+//            return this;
+//        }
 
         public OpenAiStreamingChatModelBuilder baseUrl(String baseUrl) {
             this.baseUrl = baseUrl;
