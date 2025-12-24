@@ -17,3 +17,11 @@ langchain4j:
       max-tokens: 8192
       log-requests: true
       log-responses: true
+# 添加 COS 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: https://codegen-0311-1392800598.cos.ap-shanghai.myqcloud.com
+    secretId: AKID2we8RYTBh097sSpz2veAWTJSTJxSp10m
+    secretKey: c0CICtRmxvfCWfbMvJSO8f1A51vfEjCX
+    region: ap-shanghai
+    bucket: codegen-0311-1392800598

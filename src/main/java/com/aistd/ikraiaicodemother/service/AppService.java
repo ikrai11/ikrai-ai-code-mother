@@ -17,6 +17,13 @@ import java.util.List;
  */
 public interface AppService extends IService<App> {
 
+    /**
+     * 异步生成应用截图
+     *
+     * @param appId 应用ID
+     * @param appUrl 应用URL
+     */
+    void generateAppScreenshotAsync(Long appId, String appUrl);
 
     /**
      * 获取应用封装类
