@@ -120,6 +120,12 @@ declare namespace API {
     isDelete?: number
   }
 
+  type ChatHistoryExportRequest = {
+    appId?: number
+    startTime?: string
+    endTime?: string
+  }
+
   type ChatHistoryQueryRequest = {
     pageNum?: number
     pageSize?: number
@@ -131,12 +137,6 @@ declare namespace API {
     appId?: number
     userId?: number
     lastCreateTime?: string
-  }
-
-  type ChatHistoryExportRequest = {
-    appId?: number
-    startTime?: string
-    endTime?: string
   }
 
   type chatToGenCodeParams = {

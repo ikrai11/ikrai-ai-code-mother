@@ -2,7 +2,6 @@ package com.aistd.ikraiaicodemother.constant;
 /**
  * 用户相关常量
  *
- * @author <a href="https://github.com/ikrai11">程序员ikrai11</a>
  */
 public interface UserConstant {
 

@@ -4,6 +4,9 @@
     <div class="header-bar">
       <div class="header-left">
         <h1 class="app-name">{{ appInfo?.appName || '网站生成器' }}</h1>
+        <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
+          {{ formatCodeGenType(appInfo.codeGenType) }}
+        </a-tag>
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">
@@ -11,6 +14,18 @@
             <InfoCircleOutlined />
           </template>
           应用详情
+        </a-button>
+        <a-button
+          type="primary"
+          ghost
+          @click="downloadCode"
+          :loading="downloading"
+          :disabled="!isOwner"
+        >
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载代码
         </a-button>
         <a-button type="default" @click="downloadChatHistory">
           <template #icon>
@@ -35,11 +50,7 @@
         <div class="messages-container" ref="messagesContainer">
           <!-- 加载更多按钮 -->
           <div v-if="hasMoreHistory && !chatHistoryLoading" class="load-more-container">
-            <a-button
-              type="link"
-              @click="loadMoreHistory"
-              :loading="chatHistoryLoading"
-            >
+            <a-button type="link" @click="loadMoreHistory" :loading="chatHistoryLoading">
               加载更多历史消息
             </a-button>
           </div>
@@ -165,7 +176,7 @@ import {
   deleteApp as deleteAppApi,
 } from '@/api/appController'
 import { listAppChatHistory, exportChatHistoryAsMarkdown } from '@/api/chatHistoryController'
-import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
+import { CodeGenTypeEnum, formatCodeGenType } from '@/utils/codeGenTypes'
 import request from '@/request'
 
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
@@ -243,7 +254,7 @@ const downloadChatHistory = async () => {
 
   try {
     const res = await exportChatHistoryAsMarkdown({
-      appId: appId.value as unknown as number
+      appId: appId.value as unknown as number,
     })
 
     // 创建下载链接
@@ -313,10 +324,12 @@ const loadChatHistory = async (loadMore = false) => {
       const historyRecords = res.data.data.records || []
 
       // 转换历史记录为消息格式
-      const historyMessages: Message[] = historyRecords.map((record: API.ChatHistory) => ({
-        type: record.messageType === 'user' ? 'user' : 'ai',
-        content: record.message || '',
-      })).reverse() // 反转以保持时间顺序
+      const historyMessages: Message[] = historyRecords
+        .map((record: API.ChatHistory) => ({
+          type: record.messageType === 'user' ? 'user' : 'ai',
+          content: record.message || '',
+        }))
+        .reverse() // 反转以保持时间顺序
 
       if (loadMore) {
         // 加载更多时，将历史消息添加到前面
@@ -332,7 +345,9 @@ const loadChatHistory = async (loadMore = false) => {
       }
 
       // 检查是否还有更多历史消息
-      hasMoreHistory.value = res.data.data.totalRow ? res.data.data.totalRow > messages.value.length : false
+      hasMoreHistory.value = res.data.data.totalRow
+        ? res.data.data.totalRow > messages.value.length
+        : false
 
       // 检查是否有对话历史（用于初始消息逻辑）
       hasInitialConversation.value = messages.value.length > 0
@@ -600,6 +615,47 @@ const deleteApp = async () => {
   }
 }
 
+// 下载相关
+const downloading = ref(false)
+
+// 下载代码
+const downloadCode = async () => {
+  if (!appId.value) {
+    message.error('应用ID不存在')
+    return
+  }
+  downloading.value = true
+  try {
+    const API_BASE_URL = request.defaults.baseURL || ''
+    const url = `${API_BASE_URL}/app/download/${appId.value}`
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.status}`)
+    }
+    // 获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const fileName = contentDisposition?.match(/filename="(.+)"/)?.[1] || `app-${appId.value}.zip`
+    // 下载文件
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName
+    link.click()
+    // 清理
+    URL.revokeObjectURL(downloadUrl)
+    message.success('代码下载成功')
+  } catch (error) {
+    console.error('下载失败：', error)
+    message.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
+  }
+}
+
 // 页面加载时获取应用信息
 onMounted(() => {
   fetchAppInfo()
@@ -815,6 +871,9 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   border: none;
+}
+.code-gen-type-tag {
+  font-size: 12px;
 }
 
 /* 响应式设计 */

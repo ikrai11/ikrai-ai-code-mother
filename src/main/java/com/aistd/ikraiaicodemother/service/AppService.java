@@ -1,5 +1,6 @@
 package com.aistd.ikraiaicodemother.service;
 
+import com.aistd.ikraiaicodemother.model.dto.app.AppAddRequest;
 import com.aistd.ikraiaicodemother.model.dto.app.AppQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodemother.model.vo.AppVO;
@@ -42,6 +43,15 @@ public interface AppService extends IService<App> {
      * @return 代码生成结果流
      */
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 创建应用
+     *
+     * @param appAddRequest 应用添加请求
+     * @param loginUser     登录用户
+     * @return 应用ID
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     boolean removeByAppId(Serializable id);
 

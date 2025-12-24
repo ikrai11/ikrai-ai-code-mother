@@ -35,18 +35,17 @@ export async function listAppChatHistory(
   })
 }
 
-/** 导出对话历史为Markdown POST /chatHistory/export/markdown */
+/** 此处后端没有提供注释 POST /chatHistory/export/markdown */
 export async function exportChatHistoryAsMarkdown(
   body: API.ChatHistoryExportRequest,
   options?: { [key: string]: any }
 ) {
-  return request('/chatHistory/export/markdown', {
+  return request<any>('/chatHistory/export/markdown', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     data: body,
-    responseType: 'blob',
     ...(options || {}),
   })
 }

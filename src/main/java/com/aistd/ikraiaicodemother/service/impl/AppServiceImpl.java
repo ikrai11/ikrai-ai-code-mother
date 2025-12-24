@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.aistd.ikraiaicodemother.ai.AiCodeGenTypeRoutingService;
 import com.aistd.ikraiaicodemother.constant.AppConstant;
 import com.aistd.ikraiaicodemother.core.AiCodeGeneratorFacade;
 import com.aistd.ikraiaicodemother.core.builder.VueProjectBuilder;
@@ -13,6 +14,7 @@ import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
 import com.aistd.ikraiaicodemother.mapper.AppMapper;
+import com.aistd.ikraiaicodemother.model.dto.app.AppAddRequest;
 import com.aistd.ikraiaicodemother.model.dto.app.AppQueryRequest;
 import com.aistd.ikraiaicodemother.model.entity.App;
 import com.aistd.ikraiaicodemother.model.entity.User;
@@ -58,7 +60,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private ScreenshotService screenshotService;
-
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
 
     @Override
@@ -84,11 +87,33 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         //7.收集AI相应内容并在完成后添加到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
     }
-        /**
-         * 删除应用时关联删除对话历史
-         * @param id 应用ID
-         * @return 是否删除成功
-         */
+
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
+    }
+    /**
+     * 删除应用时关联删除对话历史
+     *
+     * @param id 应用ID
+     * @return 是否删除成功
+     */
     @Override
     public boolean removeByAppId(Serializable id) {
         if (id==null){
@@ -110,6 +135,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         return this.removeById(appId);
     }
 
+    /**
+     * 部署应用，生成或返回 deployKey
+     * @param appId     应用ID
+     * @param loginUser 登录用户
+     * @return deployKey
+     */
     @Override
     public String deployApp(Long appId, User loginUser) {
         //1.参数校验
