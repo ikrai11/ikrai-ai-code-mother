@@ -9,6 +9,7 @@ import com.aistd.ikraiaicodemother.constant.AppConstant;
 import com.aistd.ikraiaicodemother.core.builder.VueProjectBuilder;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodemother.model.enums.ChatHistoryMessageTypeEnum;
+import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
 import com.aistd.ikraiaicodemother.service.ChatHistoryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -37,11 +38,12 @@ public class JsonMessageStreamHandler {
      * @param chatHistoryService 聊天历史服务
      * @param appId              应用ID
      * @param loginUser          登录用户
+     * @param codeGenType        代码生成类型
      * @return 处理后的流
      */
     public Flux<String> handle(Flux<String> originFlux,
                                ChatHistoryService chatHistoryService,
-                               long appId, User loginUser) {
+                               long appId, User loginUser, CodeGenTypeEnum codeGenType) {
         // 收集数据用于生成后端记忆格式
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
@@ -58,7 +60,10 @@ public class JsonMessageStreamHandler {
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(),
                             loginUser.getId());
                     //异步构造Vue项目
-                    String projectPath= AppConstant.CODE_OUTPUT_ROOT_DIR + "/" + appId;
+                    log.info("构建Vue项目，codeGenType: {}, appId: {}", codeGenType, appId);
+                    String sourceDirName = codeGenType.getValue() + "_" + appId;
+                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/" + sourceDirName;
+                    log.info("Vue项目路径: {}", projectPath);
                     vueProjectBuilder.buildProjectAsync(projectPath);
                 })
                 .doOnError(error -> {
