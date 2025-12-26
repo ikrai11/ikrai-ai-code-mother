@@ -76,13 +76,51 @@
           </div>
         </div>
 
+        <!-- 选中元素信息展示 -->
+        <a-alert
+          v-if="selectedElementInfo"
+          class="selected-element-alert"
+          type="info"
+          closable
+          @close="clearSelectedElement"
+        >
+          <template #message>
+            <div class="selected-element-info">
+              <div class="element-header">
+                <span class="element-tag">
+                  选中元素：{{ selectedElementInfo.tagName.toLowerCase() }}
+                </span>
+                <span v-if="selectedElementInfo.id" class="element-id">
+                  #{{ selectedElementInfo.id }}
+                </span>
+                <span v-if="selectedElementInfo.className" class="element-class">
+                  .{{ selectedElementInfo.className.split(' ').join('.') }}
+                </span>
+              </div>
+              <div class="element-details">
+                <div v-if="selectedElementInfo.textContent" class="element-item">
+                  内容: {{ selectedElementInfo.textContent.substring(0, 50) }}
+                  {{ selectedElementInfo.textContent.length > 50 ? '...' : '' }}
+                </div>
+                <div v-if="selectedElementInfo.pagePath" class="element-item">
+                  页面路径: {{ selectedElementInfo.pagePath }}
+                </div>
+                <div class="element-item">
+                  选择器:
+                  <code class="element-selector-code">{{ selectedElementInfo.selector }}</code>
+                </div>
+              </div>
+            </div>
+          </template>
+        </a-alert>
+
         <!-- 用户消息输入框 -->
         <div class="input-container">
           <div class="input-wrapper">
             <a-tooltip v-if="!isOwner" title="无法在别人的作品下对话哦~" placement="top">
               <a-textarea
                 v-model:value="userInput"
-                placeholder="请描述你想生成的网站，越详细效果越好哦"
+                :placeholder="getInputPlaceholder()"
                 :rows="4"
                 :maxlength="1000"
                 @keydown.enter.prevent="sendMessage"
@@ -92,7 +130,7 @@
             <a-textarea
               v-else
               v-model:value="userInput"
-              placeholder="请描述你想生成的网站，越详细效果越好哦"
+              :placeholder="getInputPlaceholder()"
               :rows="4"
               :maxlength="1000"
               @keydown.enter.prevent="sendMessage"
@@ -119,6 +157,19 @@
         <div class="preview-header">
           <h3>生成后的网页展示</h3>
           <div class="preview-actions">
+            <a-button
+              v-if="isOwner && previewUrl"
+              type="link"
+              :danger="isEditMode"
+              @click="toggleEditMode"
+              :class="{ 'edit-mode-active': isEditMode }"
+              style="padding: 0; height: auto; margin-right: 12px"
+            >
+              <template #icon>
+                <EditOutlined />
+              </template>
+              {{ isEditMode ? '退出编辑' : '编辑模式' }}
+            </a-button>
             <a-button v-if="previewUrl" type="link" @click="openInNewTab">
               <template #icon>
                 <ExportOutlined />
@@ -184,6 +235,7 @@ import AppDetailModal from '@/components/AppDetailModal.vue'
 import DeploySuccessModal from '@/components/DeploySuccessModal.vue'
 import aiAvatar from '@/assets/aiAvatar.png'
 import { API_BASE_URL, getStaticPreviewUrl } from '@/config/env'
+import { VisualEditor, type ElementInfo } from '@/utils/visualEditor'
 
 import {
   CloudUploadOutlined,
@@ -191,6 +243,7 @@ import {
   ExportOutlined,
   InfoCircleOutlined,
   DownloadOutlined,
+  EditOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -404,14 +457,33 @@ const sendMessage = async () => {
     return
   }
 
-  const message = userInput.value.trim()
+  let message = userInput.value.trim()
+  // 如果有选中的元素，将元素信息添加到提示词中
+  if (selectedElementInfo.value) {
+    let elementContext = `\n\n选中元素信息：`
+    if (selectedElementInfo.value.pagePath) {
+      elementContext += `\n- 页面路径: ${selectedElementInfo.value.pagePath}`
+    }
+    elementContext += `\n- 标签: ${selectedElementInfo.value.tagName.toLowerCase()}\n- 选择器: ${selectedElementInfo.value.selector}`
+    if (selectedElementInfo.value.textContent) {
+      elementContext += `\n- 当前内容: ${selectedElementInfo.value.textContent.substring(0, 100)}`
+    }
+    message += elementContext
+  }
   userInput.value = ''
-
-  // 添加用户消息
+  // 添加用户消息（包含元素信息）
   messages.value.push({
     type: 'user',
     content: message,
   })
+
+  // 发送消息后，清除选中元素并退出编辑模式
+  if (selectedElementInfo.value) {
+    clearSelectedElement()
+    if (isEditMode.value) {
+      toggleEditMode()
+    }
+  }
 
   // 添加AI消息占位符
   const aiMessageIndex = messages.value.length
@@ -587,6 +659,11 @@ const openDeployedSite = () => {
 // iframe加载完成
 const onIframeLoad = () => {
   previewReady.value = true
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (iframe) {
+    visualEditor.init(iframe)
+    visualEditor.onIframeLoad()
+  }
 }
 
 // 编辑应用
@@ -617,6 +694,15 @@ const deleteApp = async () => {
 
 // 下载相关
 const downloading = ref(false)
+
+// 可视化编辑相关
+const isEditMode = ref(false)
+const selectedElementInfo = ref<ElementInfo | null>(null)
+const visualEditor = new VisualEditor({
+  onElementSelected: (elementInfo: ElementInfo) => {
+    selectedElementInfo.value = elementInfo
+  },
+})
 
 // 下载代码
 const downloadCode = async () => {
@@ -656,14 +742,49 @@ const downloadCode = async () => {
   }
 }
 
+// 可视化编辑相关函数
+const toggleEditMode = () => {
+  // 检查 iframe 是否已经加载
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (!iframe) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  // 确保 visualEditor 已初始化
+  if (!previewReady.value) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  const newEditMode = visualEditor.toggleEditMode()
+  isEditMode.value = newEditMode
+}
+
+const clearSelectedElement = () => {
+  selectedElementInfo.value = null
+  visualEditor.clearSelection()
+}
+
+const getInputPlaceholder = () => {
+  if (selectedElementInfo.value) {
+    return `正在编辑 ${selectedElementInfo.value.tagName.toLowerCase()} 元素，描述您想要的修改...`
+  }
+  return '请描述你想生成的网站，越详细效果越好哦'
+}
+
 // 页面加载时获取应用信息
 onMounted(() => {
   fetchAppInfo()
+
+  // 监听 iframe 消息
+  window.addEventListener('message', (event) => {
+    visualEditor.handleIframeMessage(event)
+  })
 })
 
 // 清理资源
 onUnmounted(() => {
   // EventSource 会在组件卸载时自动清理
+  window.removeEventListener('message', visualEditor.handleIframeMessage)
 })
 </script>
 
@@ -872,6 +993,10 @@ onUnmounted(() => {
   height: 100%;
   border: none;
 }
+
+.selected-element-alert {
+  margin: 0 16px;
+}
 .code-gen-type-tag {
   font-size: 12px;
 }
@@ -905,6 +1030,71 @@ onUnmounted(() => {
 
   .message-content {
     max-width: 85%;
+  }
+
+  /* 选中元素信息样式 */
+  .selected-element-alert {
+    margin: 0 16px;
+  }
+
+  .selected-element-info {
+    line-height: 1.4;
+  }
+
+  .element-header {
+    margin-bottom: 8px;
+  }
+
+  .element-details {
+    margin-top: 8px;
+  }
+
+  .element-item {
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .element-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .element-tag {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #007bff;
+  }
+
+  .element-id {
+    color: #28a745;
+    margin-left: 4px;
+  }
+
+  .element-class {
+    color: #ffc107;
+    margin-left: 4px;
+  }
+
+  .element-selector-code {
+    font-family: 'Monaco', 'Menlo', monospace;
+    background: #f6f8fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #d73a49;
+    border: 1px solid #e1e4e8;
+  }
+
+  /* 编辑模式按钮样式 */
+  .edit-mode-active {
+    background-color: #52c41a !important;
+    border-color: #52c41a !important;
+    color: white !important;
+  }
+
+  .edit-mode-active:hover {
+    background-color: #73d13d !important;
+    border-color: #73d13d !important;
   }
 }
 </style>
