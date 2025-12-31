@@ -25,3 +25,10 @@ cos:
     secretKey: c0CICtRmxvfCWfbMvJSO8f1A51vfEjCX
     region: ap-shanghai
     bucket: codegen-0311-1392800598
+#pexels api key
+pexels:
+  api-key: iGcQ74G4CIXD8qhsMHOajRNWF8HDXuxvYF2LwU7bcpqNlBJkpsekVvC6
+# 阿里云 DashScope 配置
+dashscope:
+  api-key: sk-2361b4a54c6341f18af65e761dff0469
+  image-model: wan2.2-t2i-flash
