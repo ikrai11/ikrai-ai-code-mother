@@ -1,5 +1,6 @@
 package com.aistd.ikraiaicodemother.langgraph4j.state;
 
+import com.aistd.ikraiaicodemother.langgraph4j.model.ImageCollectionPlan;
 import com.aistd.ikraiaicodemother.langgraph4j.model.ImageResource;
 import com.aistd.ikraiaicodemother.langgraph4j.model.QualityResult;
 import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
@@ -96,4 +97,18 @@ public class WorkflowContext implements Serializable {
     public static Map<String, Object> saveContext(WorkflowContext context) {
         return Map.of(WORKFLOW_CONTEXT_KEY, context);
     }
+    /**
+     * 图片收集计划
+     */
+    private ImageCollectionPlan imageCollectionPlan;
+
+
+    /**
+     * 并发图片收集的中间结果字段
+     */
+    private List<ImageResource> contentImages;
+    private List<ImageResource> illustrations;
+    private List<ImageResource> diagrams;
+    private List<ImageResource> logos;
+
 }
