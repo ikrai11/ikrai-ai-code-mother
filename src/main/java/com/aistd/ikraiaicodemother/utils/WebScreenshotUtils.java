@@ -45,7 +45,7 @@ public class WebScreenshotUtils {
 //            System.setProperty("wdm.chromeDriverMirrorUrl", "https://registry.npmmirror.com/binary.html?path=chromedriver");
             WebDriverManager.firefoxdriver().setup();
             // 自动管理 ChromeDriver
-            // 配置 Chrome 选项
+            // 配置 Chrome 选项火狐
             FirefoxOptions options = new FirefoxOptions();
             // 无头模式
             options.addArguments("--headless");
