@@ -1,7 +1,6 @@
 package com.aistd.ikraiaicodemother.ai;
 
 import com.aistd.ikraiaicodemother.ai.guradrail.PromptSafetyInputGuardrail;
-import com.aistd.ikraiaicodemother.ai.guradrail.RetryOutputGuardrail;
 import com.aistd.ikraiaicodemother.ai.tool.ToolManager;
 import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
@@ -95,8 +94,9 @@ public class AiCodeGeneratorServiceFactory {
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
-                        .inputGuardrails(new PromptSafetyInputGuardrail())
-                        .outputGuardrails(new RetryOutputGuardrail())
+                        .maxSequentialToolsInvocations(20)  // 最多连续调用 20 次工具
+                        .inputGuardrails(new PromptSafetyInputGuardrail())// 输入守卫rails
+                        /*.outputGuardrails(new RetryOutputGuardrail())// 输出守卫rails,为了流式输出，这里不使用*/
                         .build();
             }
             case HTML, MULTI_FILE -> {
@@ -106,8 +106,8 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
-                        .inputGuardrails(new PromptSafetyInputGuardrail())
-                        .outputGuardrails(new RetryOutputGuardrail())
+                        .inputGuardrails(new PromptSafetyInputGuardrail())// 输入守卫rails
+                        /*.outputGuardrails(new RetryOutputGuardrail())// 输出守卫rails,为了流式输出，这里不使用*/
                         .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
