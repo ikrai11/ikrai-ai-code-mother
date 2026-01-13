@@ -6,8 +6,6 @@ import cn.hutool.json.JSONUtil;
 import com.aistd.ikraiaicodemother.ai.model.message.*;
 import com.aistd.ikraiaicodemother.ai.tool.BaseTool;
 import com.aistd.ikraiaicodemother.ai.tool.ToolManager;
-import com.aistd.ikraiaicodemother.constant.AppConstant;
-import com.aistd.ikraiaicodemother.core.builder.VueProjectBuilder;
 import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.aistd.ikraiaicodemother.model.enums.CodeGenTypeEnum;
@@ -28,8 +26,6 @@ import java.util.Set;
 @Component
 public class JsonMessageStreamHandler {
 
-    @Resource
-    private VueProjectBuilder vueProjectBuilder;
     @Resource
     private ToolManager toolManager;
 
@@ -62,12 +58,7 @@ public class JsonMessageStreamHandler {
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(),
                             loginUser.getId());
-                    //异步构造Vue项目
-                    log.info("构建Vue项目，codeGenType: {}, appId: {}", codeGenType, appId);
-                    String sourceDirName = codeGenType.getValue() + "_" + appId;
-                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/" + sourceDirName;
-                    log.info("Vue项目路径: {}", projectPath);
-                    vueProjectBuilder.buildProjectAsync(projectPath);
+
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
