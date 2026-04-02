@@ -1,11 +1,11 @@
 package com.aistd.ikraiaicodeuser.service;
 
-import com.aistd.ikraiaicodeuser.model.dto.user.UserQueryRequest;
-import com.aistd.ikraiaicodeuser.model.vo.LoginUserVO;
-import com.aistd.ikraiaicodeuser.model.vo.UserVO;
+import com.aistd.ikraiaicodemother.model.dto.user.UserQueryRequest;
+import com.aistd.ikraiaicodemother.model.vo.LoginUserVO;
+import com.aistd.ikraiaicodemother.model.vo.UserVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.aistd.ikraiaicodeuser.model.entity.User;
+import com.aistd.ikraiaicodemother.model.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;

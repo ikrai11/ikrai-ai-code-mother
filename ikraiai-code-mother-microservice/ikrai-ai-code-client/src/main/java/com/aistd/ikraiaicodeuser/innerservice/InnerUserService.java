@@ -1,16 +1,16 @@
 package com.aistd.ikraiaicodeuser.innerservice;
 
-import com.aistd.ikraiaicodeuser.exception.BusinessException;
-import com.aistd.ikraiaicodeuser.exception.ErrorCode;
-import com.aistd.ikraiaicodeuser.model.entity.User;
-import com.aistd.ikraiaicodeuser.model.vo.UserVO;
+import com.aistd.ikraiaicodemother.exception.BusinessException;
+import com.aistd.ikraiaicodemother.exception.ErrorCode;
+import com.aistd.ikraiaicodemother.model.entity.User;
+import com.aistd.ikraiaicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
-import static com.aistd.ikraiaicodeuser.constant.UserConstant.USER_LOGIN_STATE;
+import static com.aistd.ikraiaicodemother.constant.UserConstant.USER_LOGIN_STATE;
 
 public interface InnerUserService {
 

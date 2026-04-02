@@ -3,15 +3,15 @@ package com.aistd.ikraiaicodeuser.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.aistd.ikraiaicodeuser.exception.BusinessException;
-import com.aistd.ikraiaicodeuser.exception.ErrorCode;
-import com.aistd.ikraiaicodeuser.model.dto.user.UserQueryRequest;
-import com.aistd.ikraiaicodeuser.model.enums.UserRoleEnum;
-import com.aistd.ikraiaicodeuser.model.vo.LoginUserVO;
-import com.aistd.ikraiaicodeuser.model.vo.UserVO;
+import com.aistd.ikraiaicodemother.exception.BusinessException;
+import com.aistd.ikraiaicodemother.exception.ErrorCode;
+import com.aistd.ikraiaicodemother.model.dto.user.UserQueryRequest;
+import com.aistd.ikraiaicodemother.model.enums.UserRoleEnum;
+import com.aistd.ikraiaicodemother.model.vo.LoginUserVO;
+import com.aistd.ikraiaicodemother.model.vo.UserVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.aistd.ikraiaicodeuser.model.entity.User;
+import com.aistd.ikraiaicodemother.model.entity.User;
 import com.aistd.ikraiaicodeuser.mapper.UserMapper;
 import com.aistd.ikraiaicodeuser.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.aistd.ikraiaicodeuser.constant.UserConstant.USER_LOGIN_STATE;
+import static com.aistd.ikraiaicodemother.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户 服务层实现。

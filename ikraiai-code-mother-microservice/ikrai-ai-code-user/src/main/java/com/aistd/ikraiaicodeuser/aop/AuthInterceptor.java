@@ -1,10 +1,10 @@
 package com.aistd.ikraiaicodeuser.aop;
 
 import com.aistd.ikraiaicodeuser.annotation.AuthCheck;
-import com.aistd.ikraiaicodeuser.exception.BusinessException;
-import com.aistd.ikraiaicodeuser.exception.ErrorCode;
-import com.aistd.ikraiaicodeuser.model.entity.User;
-import com.aistd.ikraiaicodeuser.model.enums.UserRoleEnum;
+import com.aistd.ikraiaicodemother.exception.BusinessException;
+import com.aistd.ikraiaicodemother.exception.ErrorCode;
+import com.aistd.ikraiaicodemother.model.entity.User;
+import com.aistd.ikraiaicodemother.model.enums.UserRoleEnum;
 import com.aistd.ikraiaicodeuser.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;

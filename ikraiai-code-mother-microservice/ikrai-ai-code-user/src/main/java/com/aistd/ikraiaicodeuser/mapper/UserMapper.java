@@ -1,7 +1,7 @@
 package com.aistd.ikraiaicodeuser.mapper;
 
 import com.mybatisflex.core.BaseMapper;
-import com.aistd.ikraiaicodeuser.model.entity.User;
+import com.aistd.ikraiaicodemother.model.entity.User;
 
 /**
  * 用户 映射层。
