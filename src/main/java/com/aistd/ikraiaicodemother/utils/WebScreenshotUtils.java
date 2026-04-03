@@ -13,8 +13,8 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
@@ -42,11 +42,10 @@ public class WebScreenshotUtils {
     private static WebDriver initChromeDriver(int width, int height) {
         try {
             // 自动管理 ChromeDriver
-//            System.setProperty("wdm.chromeDriverMirrorUrl", "https://registry.npmmirror.com/binary.html?path=chromedriver");
-            WebDriverManager.firefoxdriver().setup();
-            // 自动管理 ChromeDriver
-            // 配置 Chrome 选项火狐
-            FirefoxOptions options = new FirefoxOptions();
+            System.setProperty("wdm.chromeDriverMirrorUrl", "https://registry.npmmirror.com/binary.html?path=chromedriver");
+            WebDriverManager.chromedriver().useMirror().setup();
+            // 配置 Chrome 选项
+            ChromeOptions options = new ChromeOptions();
             // 无头模式
             options.addArguments("--headless");
             // 禁用GPU（在某些环境下避免问题）
@@ -62,7 +61,7 @@ public class WebScreenshotUtils {
             // 设置用户代理
             options.addArguments("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
             // 创建驱动
-            WebDriver driver = new FirefoxDriver(options);
+            WebDriver driver = new ChromeDriver(options);
             // 设置页面加载超时
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
             // 设置隐式等待
@@ -73,6 +72,8 @@ public class WebScreenshotUtils {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "初始化 Chrome 浏览器失败");
         }
     }
+
+
 
     /**
      * 保存图片到文件
