@@ -8,7 +8,7 @@
           rel="noopener noreferrer"
           class="author-link"
         >
-          i love you by 程序员真嗣
+          Web代码生成系统
         </a>
       </p>
     </div>

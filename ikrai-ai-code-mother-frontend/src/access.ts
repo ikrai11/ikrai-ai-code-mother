@@ -19,10 +19,20 @@ router.beforeEach(async (to, from, next) => {
   }
   const toUrl = to.fullPath
   if (toUrl.startsWith('/admin')) {
-    if (!loginUser || loginUser.userRole !== 'admin') {
-      message.error('没有权限')
-      next(`/user/login?redirect=${to.fullPath}`)
-      return
+    if (toUrl === '/admin/appManage') {
+      // 应用管理：只需登录
+      if (!loginUser || !loginUser.id) {
+        message.error('请先登录')
+        next(`/user/login?redirect=${to.fullPath}`)
+        return
+      }
+    } else {
+      // 其他 admin 路由：需要 admin 角色
+      if (!loginUser || loginUser.userRole !== 'admin') {
+        message.error('没有权限')
+        next(`/user/login?redirect=${to.fullPath}`)
+        return
+      }
     }
   }
   next()

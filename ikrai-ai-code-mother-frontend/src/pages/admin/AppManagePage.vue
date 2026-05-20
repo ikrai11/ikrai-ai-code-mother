@@ -5,7 +5,7 @@
       <a-form-item label="应用名称">
         <a-input v-model:value="searchParams.appName" placeholder="输入应用名称" />
       </a-form-item>
-      <a-form-item label="创建者">
+      <a-form-item v-if="isAdmin" label="创建者">
         <a-input v-model:value="searchParams.userId" placeholder="输入用户ID" />
       </a-form-item>
       <a-form-item label="生成类型">
@@ -71,6 +71,7 @@
           <a-space>
             <a-button type="primary" size="small" @click="editApp(record)"> 编辑 </a-button>
             <a-button
+              v-if="isAdmin"
               type="default"
               size="small"
               @click="toggleFeatured(record)"
@@ -78,7 +79,7 @@
             >
               {{ record.priority === 99 ? '取消精选' : '精选' }}
             </a-button>
-            <a-popconfirm title="确定要删除这个应用吗？" @confirm="deleteApp(record.id)">
+            <a-popconfirm title="确定要删除这个应用吗？" @confirm="doDelete(record.id)">
               <a-button danger size="small">删除</a-button>
             </a-popconfirm>
           </a-space>
@@ -92,14 +93,17 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { listAppVoByPageByAdmin, deleteAppByAdmin, updateAppByAdmin } from '@/api/appController'
+import { listAppVoByPageByAdmin, listMyAppVoByPage, deleteAppByAdmin, deleteApp, updateAppByAdmin } from '@/api/appController'
+import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType } from '@/utils/codeGenTypes'
 import { formatTime } from '@/utils/time'
 import UserInfo from '@/components/UserInfo.vue'
 
 const router = useRouter()
+const loginUserStore = useLoginUserStore()
+const isAdmin = computed(() => loginUserStore.loginUser.userRole === 'admin')
 
-const columns = [
+const allColumns = [
   {
     title: 'ID',
     dataIndex: 'id',
@@ -130,6 +134,7 @@ const columns = [
     title: '优先级',
     dataIndex: 'priority',
     width: 80,
+    adminOnly: true,
   },
   {
     title: '部署时间',
@@ -140,6 +145,7 @@ const columns = [
     title: '创建者',
     dataIndex: 'user',
     width: 120,
+    adminOnly: true,
   },
   {
     title: '创建时间',
@@ -154,6 +160,8 @@ const columns = [
   },
 ]
 
+const columns = computed(() => allColumns.filter(col => !col.adminOnly || isAdmin.value))
+
 // 数据
 const data = ref<API.AppVO[]>([])
 const total = ref(0)
@@ -167,7 +175,8 @@ const searchParams = reactive<API.AppQueryRequest>({
 // 获取数据
 const fetchData = async () => {
   try {
-    const res = await listAppVoByPageByAdmin({
+    const api = isAdmin.value ? listAppVoByPageByAdmin : listMyAppVoByPage
+    const res = await api({
       ...searchParams,
     })
     if (res.data.data) {
@@ -243,11 +252,12 @@ const toggleFeatured = async (app: API.AppVO) => {
 }
 
 // 删除应用
-const deleteApp = async (id: number | undefined) => {
+const doDelete = async (id: number | undefined) => {
   if (!id) return
 
   try {
-    const res = await deleteAppByAdmin({ id })
+    const api = isAdmin.value ? deleteAppByAdmin : deleteApp
+    const res = await api({ id })
     if (res.data.code === 0) {
       message.success('删除成功')
       // 刷新数据

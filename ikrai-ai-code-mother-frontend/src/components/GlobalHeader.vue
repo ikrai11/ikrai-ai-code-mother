@@ -89,8 +89,8 @@ const originItems = [
   },
   {
     key: 'others',
-    label: h('a', { href: 'https://www.github.com/', target: '_blank' }, '真嗣'),
-    title: '真嗣',
+    label: h('a', { href: 'https://www.github.com/', target: '_blank' }, '关于'),
+    title: '关于',
   },
 ]
 
@@ -100,8 +100,16 @@ const filterMenus = (menus = [] as MenuProps['items']) => {
     const menuKey = menu?.key as string
     if (menuKey?.startsWith('/admin')) {
       const loginUser = loginUserStore.loginUser
-      if (!loginUser || loginUser.userRole !== 'admin') {
-        return false
+      // 应用管理：所有已登录用户可见
+      if (menuKey === '/admin/appManage') {
+        if (!loginUser || !loginUser.id) {
+          return false
+        }
+      } else {
+        // 其他 admin 菜单：仅 admin 可见
+        if (!loginUser || loginUser.userRole !== 'admin') {
+          return false
+        }
       }
     }
     return true
