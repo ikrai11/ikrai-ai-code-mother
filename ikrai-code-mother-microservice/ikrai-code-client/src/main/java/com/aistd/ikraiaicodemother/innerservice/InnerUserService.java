@@ -33,4 +33,6 @@ public interface InnerUserService {
         }
         return currentUser;
     }
+
+    String generateAndUploadScreenshot(String appUrl);
 }
