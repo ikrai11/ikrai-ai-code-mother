@@ -8,7 +8,7 @@
           rel="noopener noreferrer"
           class="author-link"
         >
-          Web代码生成系统
+          灵页AI生成
         </a>
       </p>
     </div>

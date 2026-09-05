@@ -1,6 +1,6 @@
 <template>
   <div id="userLoginPage">
-    <h2 class="title">Web代码生成 - 用户登录</h2>
+    <h2 class="title">灵页AI生成 - 用户登录</h2>
     <div class="desc">随心所言，生成所想网页</div>
     <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
       <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">

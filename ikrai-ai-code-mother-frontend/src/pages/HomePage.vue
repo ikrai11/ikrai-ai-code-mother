@@ -161,7 +161,7 @@ onMounted(() => {
     <div class="container">
       <!-- 网站标题和描述 -->
       <div class="hero-section">
-        <h1 class="hero-title">Web代码生成系统</h1>
+        <h1 class="hero-title">灵页AI生成</h1>
         <p class="hero-description">一句话轻松创建个性网站</p>
       </div>
 
