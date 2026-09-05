@@ -17,7 +17,6 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -35,9 +34,6 @@ public class ChatHistoryController {
 
     @Resource
     private ChatHistoryService chatHistoryService;
-    @Resource
-    @Lazy
-    private InnerUserService userService;
 
 
     /**

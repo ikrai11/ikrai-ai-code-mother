@@ -14,6 +14,7 @@ import com.aistd.ikraiaicodemother.core.handler.StreamHandlerExecutor;
 import com.aistd.ikraiaicodemother.exception.BusinessException;
 import com.aistd.ikraiaicodemother.exception.ErrorCode;
 import com.aistd.ikraiaicodemother.exception.ThrowUtils;
+import com.aistd.ikraiaicodemother.innerservice.InnerScreenshotService;
 import com.aistd.ikraiaicodemother.innerservice.InnerUserService;
 import com.aistd.ikraiaicodemother.mapper.AppMapper;
 import com.aistd.ikraiaicodemother.model.dto.app.AppAddRequest;
@@ -30,7 +31,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -49,8 +50,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
-    @Resource
-    @Lazy
+    @DubboReference
     private InnerUserService userService;
     @Resource
     private ChatHistoryService chatHistoryService;
@@ -60,9 +60,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
-    @Resource
-    @Lazy
-    private InnerUserService screenshotService;
+    @DubboReference
+    private InnerScreenshotService screenshotService;
     @Resource
     private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
     @Resource
